@@ -1,0 +1,430 @@
+
+------------------------------------------------------------------------------------------------------------------------
+REM Creation Premiere Fonction
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION AGENTCONTINGENT(NoLot INTEGER ) RETURN number 
+IS
+nb numeric;
+total numeric;
+BEGIN
+
+SELECT COUNT(*) into total FROM LOTISSEMENT;
+If NoLot > total THEN
+ RAISE_APPLICATION_ERROR(-20000, 'Le numéro de lotissement n existe pas');
+ELSIF NoLot <= 0 THEN
+ RAISE_APPLICATION_ERROR(-20001, 'Le numéro de lotissement n existe pas');
+
+ELSE
+SELECT COUNT(*) into nb FROM Engager where No_Loti = NoLot;
+return nb;
+END IF;
+end AGENTCONTINGENT;
+/
+
+------------------------------------------------------------------------------------------------------------------------
+REM Test de la Premiere fonction
+------------------------------------------------------------------------------------------------------------------------
+
+
+DECLARE 
+   c number; 
+BEGIN 
+   c := AGENTCONTINGENT(1); 
+   dbms_output.put_line(c);
+END; 
+/
+
+DECLARE 
+   c number; 
+BEGIN 
+   c := AGENTCONTINGENT(2); 
+   dbms_output.put_line(c);
+END; 
+/
+
+DECLARE 
+   c number; 
+BEGIN 
+   c := AGENTCONTINGENT(3); 
+   dbms_output.put_line(c);
+END; 
+/
+
+DECLARE 
+   c number;
+BEGIN 
+   c := AGENTCONTINGENT(36);
+   dbms_output.put_line(c);
+END; 
+/
+
+
+DECLARE 
+   c number; 
+BEGIN 
+   c := AGENTCONTINGENT(-2); 
+   dbms_output.put_line(c);
+END; 
+/
+
+------------------------------------------------------------------------------------------------------------------------
+REM Creation Deuxieme Fonction
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE CHANGERCONTINGENT(Nombre NUMBER, NoLot NUMBER)
+IS
+ nb number;
+ debug_Loti number;
+BEGIN
+ SELECT COUNT(*) into debug_Loti FROM Lotissement;
+ IF Nombre <=0 THEN
+ RAISE_APPLICATION_ERROR(-20013, 'Le numéro d agent rentré est négatif ou nul');
+  ELSIF NoLot <= 0 THEN
+ RAISE_APPLICATION_ERROR(-20011, 'Le numéro de lotissement rentré est nul ou négatif');
+ ELSIF NoLot > debug_Loti THEN
+  RAISE_APPLICATION_ERROR(-20012, 'Le numéro de lotissement rentré n existe pas');
+ SELECT NbreAgent INTO nb FROM Lotissement WHERE No_Loti = NoLot;
+ ELSIF (Nombre > 0 AND ABS(Nombre) > nb) THEN
+ RAISE_APPLICATION_ERROR(-20002, 'Le numéro rentré rend le nombre d agent du
+ lotissement négatif.');
+ 
+ ELSE
+ UPDATE LOTISSEMENT SET NbreAgent = NbreAgent + Nombre
+ WHERE No_Loti = NoLot;
+ END IF;
+END;
+/
+
+------------------------------------------------------------------------------------------------------------------------
+REM Test Deuxieme Fonction
+------------------------------------------------------------------------------------------------------------------------
+
+EXECUTE CHANGERCONTINGENT(10,1);
+EXECUTE CHANGERCONTINGENT(15,2);
+EXECUTE CHANGERCONTINGENT(-10,2);
+EXECUTE CHANGERCONTINGENT(0,2);
+EXECUTE CHANGERCONTINGENT(5,-2);
+EXECUTE CHANGERCONTINGENT(5,26);
+
+------------------------------------------------------------------------------------------------------------------------
+REM Creation Troisième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE LOTISSEMENTCONTINGENT
+IS
+   CURSOR C_Lotissement IS SELECT L.No_Loti, L.Nom_Loti FROM Lotissement L;
+   nbr number;
+BEGIN
+FOR tuple_loti IN C_Lotissement LOOP
+   nbr := AGENTCONTINGENT(tuple_loti.No_Loti);
+   dbms_output.put_line ('Le lotissement de nom ' || tuple_loti.Nom_Loti || ' a ' ||
+   nbr || ' agents engages.');
+END LOOP;
+   dbms_output.put_line ('Affichage termine');
+END;
+/
+
+------------------------------------------------------------------------------------------------------------------------
+REM Test Troisième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+EXECUTE LOTISSEMENTCONTINGENT;
+
+------------------------------------------------------------------------------------------------------------------------
+REM Creation Quatrième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE AFFICHAGEVENTREPARC(NoParcel INTEGER)
+IS
+
+CURSOR C_Agent IS SELECT A.Nom_Agent, A.Prenom_Agent 
+FROM Parcelle P, Gerer G, Agent A WHERE A.No_Agent = G.No_Agent 
+AND G.No_Parc = NoParcel AND G.Vente = 1 ORDER BY A.Nom_Agent;
+prenom_Agent VARCHAR(20);
+nom_Agent VARCHAR(20);
+debug_NoParcel number;
+
+BEGIN
+
+SELECT COUNT(*) into debug_NoParcel FROM Parcelle;
+IF NoParcel <= 0 THEN
+ RAISE_APPLICATION_ERROR(-20003, 'Le numéro de parcelle rentré est nul ou négatif');
+ELSIF NoParcel > debug_NoParcel THEN 
+ RAISE_APPLICATION_ERROR(-20004, 'Le numéro de parcelle rentré n existe pas');
+ELSE 
+
+FOR tuple_Agent IN C_Agent LOOP
+    nom_agent := tuple_Agent.Nom_Agent;
+    prenom_agent := tuple_Agent.Prenom_Agent;
+    dbms_output.put_line(nom_agent || ' ' || prenom_agent);
+END LOOP;
+END IF;
+END;
+/
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+REM Test Quatrième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+EXECUTE AFFICHAGEVENTREPARC(1);
+EXECUTE AFFICHAGEVENTREPARC(2);
+EXECUTE AFFICHAGEVENTREPARC(0);
+EXECUTE AFFICHAGEVENTREPARC(-40);
+EXECUTE AFFICHAGEVENTREPARC(40);
+
+
+------------------------------------------------------------------------------------------------------------------------
+REM Creation Cinquième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE AFFICHAGEVENTELOT (NoLot INTEGER)
+IS
+ debug_NoLot number;
+ debug_NoAg number;
+CURSOR C_Agent IS SELECT A.Nom_Agent, A.Prenom_Agent FROM 
+Parcelle P, Gerer G, Agent A WHERE 
+A.No_Agent = G.No_Agent AND G.No_Parc = P.No_Parc AND P.No_Loti = NoLot AND G.Vente = 1 
+ORDER BY A.Nom_Agent;
+
+BEGIN 
+
+SELECT COUNT(*) into debug_NoLot FROM LOTISSEMENT;
+IF NoLot <= 0 THEN 
+ RAISE_APPLICATION_ERROR(-20005, 'Le numéro de lotissement n existe pas');
+ELSIF NoLot > debug_NoLot THEN  
+ RAISE_APPLICATION_ERROR(-20006, 'Le numéro de lotissement n existe pas');
+END IF;
+
+
+FOR tuple_Agent IN C_Agent LOOP
+ dbms_output.put_line(tuple_agent.Prenom_Agent || ' ' || tuple_agent.Nom_Agent);
+END LOOP;
+END;
+/
+
+------------------------------------------------------------------------------------------------------------------------
+REM Test Cinquième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+EXECUTE AFFICHAGEVENTELOT (2);
+EXECUTE AFFICHAGEVENTELOT (3);
+EXECUTE AFFICHAGEVENTELOT (0);
+EXECUTE AFFICHAGEVENTELOT (-5);
+EXECUTE AFFICHAGEVENTELOT (45);
+
+------------------------------------------------------------------------------------------------------------------------
+REM Creation Sixième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE CREATIONENGAGEMENT (NoLot INTEGER, NoAg INTEGER)
+IS
+ nb_max number;
+ actuel number;
+ debug_NoLot number;
+ debug_NoAg number;
+
+BEGIN 
+
+SELECT COUNT(*) into debug_NoLot FROM LOTISSEMENT;
+SELECT COUNT(*) into debug_NoAg FROM AGENT;
+IF NoLot <= 0 THEN 
+ RAISE_APPLICATION_ERROR(-20007, 'Le numéro de lotissement rentré est nul ou négatif');
+ELSIF NoLot > debug_NoLot THEN  
+ RAISE_APPLICATION_ERROR(-20008, 'Le numéro de lotissement n existe pas');
+END IF;
+IF NoAg <= 0 THEN 
+ RAISE_APPLICATION_ERROR(-20009, 'Le numéro d agent rentré est nul ou négatif');
+ELSIF NoAg > debug_NoAg THEN
+ RAISE_APPLICATION_ERROR(-20010, 'Le numéro d agent n existe pas');
+END IF;
+
+SELECT NbreAgent into nb_max FROM LOTISSEMENT WHERE No_Loti = NoLot;
+actuel := AGENTCONTINGENT(NoLot);
+IF actuel < nb_max THEN 
+INSERT INTO ENGAGER(No_Loti, No_Agent, DateEngage) 
+VALUES (NoLot, NoAg, SYSDATE);
+ELSE
+dbms_output.put_line('Le nombre d agents pour ce lotissement a déjà atteint son maximum.');
+END IF;
+END;
+/
+
+------------------------------------------------------------------------------------------------------------------------
+REM Test Sixième Procédure
+------------------------------------------------------------------------------------------------------------------------
+
+EXECUTE CREATIONENGAGEMENT(1,2);
+EXECUTE CREATIONENGAGEMENT(3,1);
+SELECT * FROM ENGAGER;
+EXECUTE CREATIONENGAGEMENT(1,-4);
+EXECUTE CREATIONENGAGEMENT(0,0);
+EXECUTE CREATIONENGAGEMENT(50,1);
+EXECUTE CREATIONENGAGEMENT(4,48);
+
+
+------------------------------------------------------------------------------------------------------------------------
+REM Creation Package
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PACKAGE PACK_Loti IS
+
+FUNCTION AGENTCONTINGENT(NoLot INTEGER) RETURN number;
+PROCEDURE CHANGERCONTINGENT(Nombre NUMBER, NoLot NUMBER);
+PROCEDURE LOTISSEMENTCONTINGENT;
+PROCEDURE AFFICHAGEVENTREPARC(NoParcel INTEGER);
+PROCEDURE AFFICHAGEVENTELOT (NoLot INTEGER);
+PROCEDURE CREATIONENGAGEMENT (NoLot INTEGER, NoAg INTEGER);
+
+END;
+/
+
+------------------------------------------------------------------------------------------------------------------------
+REM Ajout des Procédures et Fonctions Testées dans le Package 
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PACKAGE BODY PACK_Loti IS 
+
+FUNCTION AGENTCONTINGENT(NoLot INTEGER ) RETURN number 
+IS
+nb numeric;
+total numeric;
+BEGIN
+
+SELECT COUNT(*) into total FROM LOTISSEMENT;
+If NoLot > total THEN
+ RAISE_APPLICATION_ERROR(-20000, 'Le numéro de lotissement n existe pas');
+ELSIF NoLot <= 0 THEN
+ RAISE_APPLICATION_ERROR(-20001, 'Le numéro de lotissement n existe pas');
+
+ELSE
+SELECT COUNT(*) into nb FROM Engager where No_Loti = NoLot;
+return nb;
+END IF;
+end AGENTCONTINGENT;
+
+
+PROCEDURE CHANGERCONTINGENT(Nombre NUMBER, NoLot NUMBER)
+IS
+ nb number;
+ debug_Loti number;
+BEGIN
+ SELECT COUNT(*) into debug_Loti FROM Lotissement;
+ IF Nombre <=0 THEN
+ RAISE_APPLICATION_ERROR(-20013, 'Le numéro d agent rentré est négatif ou nul');
+  ELSIF NoLot <= 0 THEN
+ RAISE_APPLICATION_ERROR(-20011, 'Le numéro de lotissement rentré est nul ou négatif');
+ ELSIF NoLot > debug_Loti THEN
+  RAISE_APPLICATION_ERROR(-20012, 'Le numéro de lotissement rentré n existe pas');
+ SELECT NbreAgent INTO nb FROM Lotissement WHERE No_Loti = NoLot;
+ ELSIF (Nombre > 0 AND ABS(Nombre) > nb) THEN
+ RAISE_APPLICATION_ERROR(-20002, 'Le numéro rentré rend le nombre d agent du
+ lotissement négatif.');
+ 
+ ELSE
+ UPDATE LOTISSEMENT SET NbreAgent = NbreAgent + Nombre
+ WHERE No_Loti = NoLot;
+ END IF;
+END;
+
+PROCEDURE LOTISSEMENTCONTINGENT
+IS
+   CURSOR C_Lotissement IS SELECT L.No_Loti, L.Nom_Loti FROM Lotissement L;
+   nbr number;
+BEGIN
+FOR tuple_loti IN C_Lotissement LOOP
+   nbr := AGENTCONTINGENT(tuple_loti.No_Loti);
+   dbms_output.put_line ('Le lotissement de nom ' || tuple_loti.Nom_Loti || ' a ' ||
+   nbr || ' agents engages.');
+END LOOP;
+   dbms_output.put_line ('Affichage termine');
+END;
+
+PROCEDURE AFFICHAGEVENTREPARC(NoParcel INTEGER)
+IS
+
+CURSOR C_Agent IS SELECT A.Nom_Agent, A.Prenom_Agent 
+FROM Parcelle P, Gerer G, Agent A WHERE A.No_Agent = G.No_Agent 
+AND G.No_Parc = NoParcel AND G.Vente = 1 ORDER BY A.Nom_Agent;
+prenom_Agent VARCHAR(20);
+nom_Agent VARCHAR(20);
+debug_NoParcel number;
+
+BEGIN
+
+SELECT COUNT(*) into debug_NoParcel FROM Parcelle;
+IF NoParcel <= 0 THEN
+ RAISE_APPLICATION_ERROR(-20003, 'Le numéro de parcelle rentré est nul ou négatif');
+ELSIF NoParcel > debug_NoParcel THEN 
+ RAISE_APPLICATION_ERROR(-20004, 'Le numéro de parcelle rentré n existe pas');
+ELSE 
+
+FOR tuple_Agent IN C_Agent LOOP
+    nom_agent := tuple_Agent.Nom_Agent;
+    prenom_agent := tuple_Agent.Prenom_Agent;
+    dbms_output.put_line(nom_agent || ' ' || prenom_agent);
+END LOOP;
+END IF;
+END;
+
+
+PROCEDURE AFFICHAGEVENTELOT (NoLot INTEGER)
+IS
+ debug_NoLot number;
+ debug_NoAg number;
+CURSOR C_Agent IS SELECT A.Nom_Agent, A.Prenom_Agent FROM 
+Parcelle P, Gerer G, Agent A WHERE 
+A.No_Agent = G.No_Agent AND G.No_Parc = P.No_Parc AND P.No_Loti = NoLot AND G.Vente = 1 
+ORDER BY A.Nom_Agent;
+
+BEGIN 
+
+SELECT COUNT(*) into debug_NoLot FROM LOTISSEMENT;
+IF NoLot <= 0 THEN 
+ RAISE_APPLICATION_ERROR(-20005, 'Le numéro de lotissement n existe pas');
+ELSIF NoLot > debug_NoLot THEN  
+ RAISE_APPLICATION_ERROR(-20006, 'Le numéro de lotissement n existe pas');
+END IF;
+
+
+FOR tuple_Agent IN C_Agent LOOP
+ dbms_output.put_line(tuple_agent.Prenom_Agent || ' ' || tuple_agent.Nom_Agent);
+END LOOP;
+END;
+
+
+PROCEDURE CREATIONENGAGEMENT (NoLot INTEGER, NoAg INTEGER)
+IS
+ nb_max number;
+ actuel number;
+ debug_NoLot number;
+ debug_NoAg number;
+
+BEGIN 
+
+SELECT COUNT(*) into debug_NoLot FROM LOTISSEMENT;
+SELECT COUNT(*) into debug_NoAg FROM AGENT;
+IF NoLot <= 0 THEN 
+ RAISE_APPLICATION_ERROR(-20007, 'Le numéro de lotissement rentré est nul ou négatif');
+ELSIF NoLot > debug_NoLot THEN  
+ RAISE_APPLICATION_ERROR(-20008, 'Le numéro de lotissement n existe pas');
+END IF;
+IF NoAg <= 0 THEN 
+ RAISE_APPLICATION_ERROR(-20009, 'Le numéro d agent rentré est nul ou négatif');
+ELSIF NoAg > debug_NoAg THEN
+ RAISE_APPLICATION_ERROR(-20010, 'Le numéro d agent n existe pas');
+END IF;
+
+SELECT NbreAgent into nb_max FROM LOTISSEMENT WHERE No_Loti = NoLot;
+actuel := AGENTCONTINGENT(NoLot);
+IF actuel < nb_max THEN 
+INSERT INTO ENGAGER(No_Loti, No_Agent, DateEngage) 
+VALUES (NoLot, NoAg, SYSDATE);
+ELSE
+dbms_output.put_line('Le nombre d agents pour ce lotissement a déjà atteint son maximum.');
+END IF;
+END;
+
+END PACK_Loti;
