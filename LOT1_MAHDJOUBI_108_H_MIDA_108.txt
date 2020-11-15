@@ -1,0 +1,188 @@
+------------------------------------------------------------------------------------------------------------------------
+Rem Suppression des Tables + Contraintes
+------------------------------------------------------------------------------------------------------------------------
+alter session set nls_date_format = 'DD/MM/RRRR';
+DROP TABLE PARCELLE CASCADE CONSTRAINTS purge;
+DROP TABLE LOTISSEMENT CASCADE CONSTRAINTS purge;
+DROP TABLE AGENCE CASCADE CONSTRAINTS purge;
+DROP TABLE AGENT CASCADE CONSTRAINTS purge;
+DROP TABLE GERER CASCADE CONSTRAINTS purge;
+DROP TABLE ENGAGER CASCADE CONSTRAINTS purge;
+DROP SEQUENCE SeqParcelle;
+DROP SEQUENCE SeqLoti;
+DROP SEQUENCE SeqAgence;
+DROP SEQUENCE SeqAgent;
+CREATE SEQUENCE SeqParcelle;
+CREATE SEQUENCE SeqLoti;
+CREATE SEQUENCE SeqAgence;
+CREATE SEQUENCE SeqAgent;
+------------------------------------------------------------------------------------------------------------------------
+REM Création des Tables
+------------------------------------------------------------------------------------------------------------------------
+
+CREATE TABLE PARCELLE
+(
+ No_Parc INTEGER,
+ Reference_Parc  VARCHAR(20) NOT NULL,
+ No_Loti INTEGER
+);
+
+CREATE TABLE LOTISSEMENT
+(
+No_Loti INTEGER,
+Nom_Loti VARCHAR(20) NOT NULL,
+NbreAgent INTEGER,
+CaGlobal INTEGER
+);
+
+CREATE TABLE Agence 
+(
+No_Agence INTEGER,
+Nom_Agence VARCHAR(20) NOT NULL,
+Site_Agence VARCHAR(30)
+);
+
+CREATE TABLE AGENT
+(
+No_Agent INTEGER,
+Nom_Agent VARCHAR(20) NOT NULL,
+Prenom_Agent VARCHAR(20) NOT NULL,
+Specialite_Agent VARCHAR(20) NOT NULL,
+Mail_Agent VARCHAR(30) NOT NULL,
+Portable_Agent INTEGER NOT NULL,
+No_Agence INTEGER
+);
+
+CREATE TABLE GERER 
+(
+No_Parc INTEGER,
+No_Agent INTEGER,
+Vente CHAR(1) 
+);
+
+CREATE TABLE ENGAGER
+(
+No_Loti INTEGER,
+No_Agent INTEGER,
+DateEngage DATE NOT NULL
+);         
+     
+------------------------------------------------------------------------------------------------------------------------
+REM Création des Contraintes
+------------------------------------------------------------------------------------------------------------------------
+
+ALTER TABLE LOTISSEMENT
+ADD CONSTRAINT PK_MH_Lotissement PRIMARY KEY (No_Loti);
+
+ALTER TABLE PARCELLE
+ADD CONSTRAINT PK_MH_Parcelle PRIMARY KEY (No_Parc)
+ADD CONSTRAINT FK_MH_Parcelle_Lotissement FOREIGN KEY (No_Loti) REFERENCES Lotissement (No_Loti);
+
+ALTER TABLE Agence 
+ADD CONSTRAINT PK_MH_Agence PRIMARY KEY (No_Agence);
+
+ALTER TABLE Agent
+ADD CONSTRAINT PK_MH_Agent PRIMARY KEY (No_Agent)
+ADD CONSTRAINT FK_MH_Agent_Agence FOREIGN KEY (No_Agence) REFERENCES Agence (No_Agence);
+
+ALTER TABLE GERER
+ADD CONSTRAINT PK_MH_Gerer PRIMARY KEY (No_Parc, No_Agent)
+ADD CONSTRAINT FK_MH_Gerer_Parcelle FOREIGN KEY (No_Parc) REFERENCES Parcelle (No_Parc)
+ADD CONSTRAINT FK_MH_Gerer_Agent FOREIGN KEY (No_Agent) REFERENCES Agent (No_Agent);
+
+ALTER TABLE ENGAGER 
+ADD CONSTRAINT PK_MH_Engager PRIMARY KEY (No_Loti, No_Agent)
+ADD CONSTRAINT FK_MH_Engager_Lotissement FOREIGN KEY (No_Loti) REFERENCES Lotissement(No_Loti)
+ADD CONSTRAINT FK_MH_Engager_Agent FOREIGN KEY (No_Agent) REFERENCES Agent (No_Agent);
+
+------------------------------------------------------------------------------------------------------------------------
+REM Création du Jeu d'Essai
+------------------------------------------------------------------------------------------------------------------------
+
+INSERT INTO LOTISSEMENT (No_Loti, Nom_Loti, NbreAgent, CaGlobal) VALUES
+(SeqLoti.nextval, 'leMillery', 3, 550000);
+
+INSERT INTO LOTISSEMENT (No_Loti, Nom_Loti, NbreAgent, CaGlobal) VALUES
+(SeqLoti.nextval, 'ChausseeMatignon', 5, 1500000);
+
+INSERT INTO LOTISSEMENT (No_Loti, Nom_Loti, NbreAgent, CaGlobal) VALUES
+(SeqLoti.nextval, 'LotissementRondey', 2, 250000);
+
+INSERT INTO LOTISSEMENT (No_Loti, Nom_Loti, NbreAgent, CaGlobal) VALUES
+(SeqLoti.nextval, 'BelAir', 1, 150000);
+
+
+INSERT INTO AGENCE (No_Agence, Nom_Agence, Site_Agence) VALUES
+(SeqAgence.nextval, 'ImmoKing', 'www.immoking.com');
+
+INSERT INTO AGENCE (No_Agence, Nom_Agence, Site_Agence) VALUES
+(SeqAgence.nextval, 'Houseur', 'www.houseur.com');
+
+INSERT INTO AGENCE (No_Agence, Nom_Agence, Site_Agence) VALUES
+(SeqAgence.nextval, 'Immo95', 'www.immo-95.com');
+
+
+INSERT INTO PARCELLE (No_Parc, Reference_Parc, No_Loti) VALUES
+(SeqParcelle.nextval, '18 rue Rondey', 3);
+
+INSERT INTO PARCELLE (No_Parc, Reference_Parc, No_Loti) VALUES
+(SeqParcelle.nextval, '13 rue BelAir', 4);
+
+INSERT INTO PARCELLE (No_Parc, Reference_Parc, No_Loti) VALUES
+(SeqParcelle.nextval, '26 Moulin Millery', 1); 
+
+INSERT INTO PARCELLE (No_Parc, Reference_Parc, No_Loti) VALUES
+(SeqParcelle.nextval, '31 Moulin Millery', 1); 
+
+INSERT INTO AGENT (No_Agent, Nom_Agent, Prenom_Agent, Specialite_Agent, Mail_Agent, Portable_Agent, No_Agence) VALUES
+(SeqAgent.nextval, 'Dupont', 'Pierre', 'HLM', 'dupont.pierre@gmail.com', 0654859420, 3); 
+
+INSERT INTO AGENT (No_Agent, Nom_Agent, Prenom_Agent, Specialite_Agent, Mail_Agent, Portable_Agent, No_Agence) VALUES
+(SeqAgent.nextval, 'Ancien', 'Jacob', 'Maison de Luxe', 'ancien.jacob@gmail.com', 0654468217, 3); 
+
+INSERT INTO AGENT (No_Agent, Nom_Agent, Prenom_Agent, Specialite_Agent, Mail_Agent, Portable_Agent, No_Agence) VALUES
+(SeqAgent.nextval, 'Lensey', 'Scott', 'Appartement', 'lensey.scott@gmail.com', 0785164302, 1) ;
+
+INSERT INTO AGENT (No_Agent, Nom_Agent, Prenom_Agent, Specialite_Agent, Mail_Agent, Portable_Agent, No_Agence) VALUES
+(SeqAgent.nextval, 'Travis', 'Scott', 'Appartement', 'travis.scott@gmail.com', 0654859420, 1) ;
+
+INSERT INTO AGENT (No_Agent, Nom_Agent, Prenom_Agent, Specialite_Agent, Mail_Agent, Portable_Agent, No_Agence) VALUES
+(SeqAgent.nextval, 'Asap', 'Rocky', 'Villa', 'asap.rocky@gmail.com', 0685649725, 2) ;
+
+INSERT INTO GERER (No_Parc, No_Agent, Vente) VALUES 
+(1, 1, 1);
+
+INSERT INTO GERER (No_Parc, No_Agent, Vente) VALUES 
+(2, 4, 0);
+
+INSERT INTO GERER (No_Parc, No_Agent, Vente) VALUES 
+(4, 4, 1);
+
+INSERT INTO GERER (No_Parc, No_Agent, Vente) VALUES 
+(3, 5, 1);
+
+INSERT INTO ENGAGER (No_Loti, No_Agent, DateEngage) VALUES
+(4, 5, '01-01-2001');
+
+INSERT INTO ENGAGER (No_Loti, No_Agent, DateEngage) VALUES
+(3, 5, '25-10-2001');
+
+INSERT INTO ENGAGER (No_Loti, No_Agent, DateEngage) VALUES
+(2, 4, '01-11-2015');
+
+INSERT INTO ENGAGER (No_Loti, No_Agent, DateEngage) VALUES
+(1, 1, '13-5-2009');
+
+INSERT INTO ENGAGER (No_Loti, No_Agent, DateEngage) VALUES
+(2, 3, '17-5-2009');
+
+------------------------------------------------------------------------------------------------------------------------
+REM Affichage des Tables
+-------------------------------------------------------------------------------------------------------------------
+
+SELECT * FROM LOTISSEMENT;
+SELECT * FROM AGENT;
+SELECT * FROM PARCELLE;
+SELECT * FROM AGENCE;
+SELECT * FROM GERER;
+SELECT * FROM ENGAGER;
